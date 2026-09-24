@@ -50,27 +50,30 @@ get_epp_ncpu(void)
 
 static int
 set_epp(char *arg) {
-	size_t i, ncpu, size, val;
+	size_t size, val;
 	char buf[32];
+	int i, ncpu;
 
-        if (arg != NULL) {
-                errno = 0;
-                val = strtol(arg, NULL, 10);
-                if (errno == EINVAL || errno == ERANGE) {
-                        warn("strtol(%s)", arg);
-                        return (-1);
-                } 
+	if (arg != NULL) {
+		errno = 0;
+		val = strtol(arg, NULL, 10);
+		if (errno == EINVAL || errno == ERANGE) {
+			warn("strtol(%s)", arg);
+			return (-1);
+		}
 	}
 
 	size = sizeof(int);
 
 	ncpu = get_epp_ncpu();
 
-	for (i = 0; i < ncpu; i++) {
-		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%zu.epp", i);
-		if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
-			warn("sysctlbyname(%s)", buf);
-			return (-1);
+	if (ncpu >= 0) {
+		for (i = 0; i < ncpu; i++) {
+			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
+			if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
+				warn("sysctlbyname(%s)", buf);
+				return (-1);
+			}
 		}
 	}
 
@@ -79,18 +82,19 @@ set_epp(char *arg) {
 
 static int
 print_epp(void) {
-	size_t i, ncpu, size, val;
+	size_t size, val;
 	char buf[32];
+	int i, ncpu;
 
 	size = sizeof(int);
 
 	ncpu = get_epp_ncpu();
 
 	if (ncpu >= 0) {
-		printf("hw.cpu: %zu\n", ncpu);
+		printf("hw.cpu: %d\n", ncpu);
 
 		for (i = 0; i < ncpu; i++) {
-			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%zu.epp", i);
+			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
 			if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
 				warn("sysctlbyname(%s)", buf);
 				return (-1);
