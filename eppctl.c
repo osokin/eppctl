@@ -90,14 +90,14 @@ print_epp(void)
 	char buf[32];
 	int i, ncpu, val;
 
-	size = sizeof(int);
-
 	ncpu = get_epp_ncpu();
 
 	if (ncpu >= 0) {
 		printf("hw.cpu: %d\n", ncpu);
 
 		for (i = 0; i < ncpu; i++) {
+			size = sizeof(int);
+
 			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
 			if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
 				warn("sysctlbyname(%s)", buf);
