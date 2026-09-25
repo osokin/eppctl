@@ -52,14 +52,14 @@ get_epp_ncpu(void)
 static int
 set_epp(char *arg)
 {
-	size_t size, val;
-	char buf[32];
-	int i, ncpu;
+	size_t size;
+	char buf[32], *endptr;
+	int i, ncpu, val;
 
 	if (arg != NULL) {
 		errno = 0;
-		val = strtol(arg, NULL, 10);
-		if (errno == EINVAL || errno == ERANGE) {
+		val = strtol(arg, &endptr, 10);
+		if (errno == ERANGE || endptr == arg || *endptr != '\0') {
 			warn("strtol(%s)", arg);
 			return (-1);
 		}
