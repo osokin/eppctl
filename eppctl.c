@@ -35,26 +35,11 @@
 #include <unistd.h>
 
 static int
-get_epp_ncpu(void)
-{
-	size_t size;
-	int ncpu;
-
-	size = sizeof(int);
-	if (sysctlbyname("hw.ncpu", &ncpu, &size, NULL, 0) < 0) {
-		warn("sysctlbyname(%s)", "hw.ncpu");
-		return (-1);
-	}
-
-	return (ncpu);
-}
-
-static int
 set_epp(char *arg)
 {
 	size_t size;
 	char buf[32];
-	int i, ncpu, val;
+	int i, val;
 	const char *errstr;
 
 	if (arg != NULL) {
@@ -65,14 +50,18 @@ set_epp(char *arg)
 		}
 	}
 
-	ncpu = get_epp_ncpu();
+	for (i = 0; ; i++) {
+		size = sizeof(int);
 
-	if (ncpu >= 0) {
-		for (i = 0; i < ncpu; i++) {
-			size = sizeof(int);
-
-			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
-			if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
+		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
+		if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
+			if (errno == ENOENT) {
+				/*
+				 * We are probably done here.  There's no
+				 * more CPUs for update their setting.
+				 */
+				return (0);
+			} else {
 				warn("sysctlbyname(%s)", buf);
 				return (-1);
 			}
@@ -87,24 +76,26 @@ print_epp(void)
 {
 	size_t size;
 	char buf[32];
-	int i, ncpu, val;
+	int i, val;
 
-	ncpu = get_epp_ncpu();
+	for (i = 0; ; i++) {
+		size = sizeof(int);
 
-	if (ncpu >= 0) {
-		printf("hw.cpu: %d\n", ncpu);
-
-		for (i = 0; i < ncpu; i++) {
-			size = sizeof(int);
-
-			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
-			if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
+		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
+		if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
+			if (errno == ENOENT) {
+				/*
+				 * We are probably done here.  There's no
+				 * more CPUs for update their setting.
+				 */
+				return (0);
+			} else {
 				warn("sysctlbyname(%s)", buf);
 				return (-1);
 			}
-
-			printf("%s: %d\n", buf, val);
 		}
+
+		printf("%s: %d\n", buf, val);
 	}
 
 	return (0);
