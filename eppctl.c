@@ -41,12 +41,10 @@ set_epp(char *arg)
 	int i, val;
 	const char *errstr;
 
-	if (arg != NULL) {
-		val = strtonum(arg, 0, 100, &errstr);
-		if (errstr != NULL) {
-			warnx("strtonum(%s): %s", arg, errstr);
-			return (-1);
-		}
+	val = strtonum(arg, 0, 100, &errstr);
+	if (errstr != NULL) {
+		warnx("strtonum(%s): %s", arg, errstr);
+		return (-1);
 	}
 
 	for (i = 0; ; i++) {
