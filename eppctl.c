@@ -34,10 +34,11 @@
 #include <string.h>
 #include <unistd.h>
 
-static size_t
+static int
 get_epp_ncpu(void)
 {
-	size_t size, ncpu;
+	size_t size;
+	int ncpu;
 
 	size = sizeof(int);
 	if (sysctlbyname("hw.ncpu", &ncpu, &size, NULL, 0) < 0) {
