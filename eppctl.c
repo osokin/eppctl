@@ -50,7 +50,8 @@ get_epp_ncpu(void)
 }
 
 static int
-set_epp(char *arg) {
+set_epp(char *arg)
+{
 	size_t size, val;
 	char buf[32];
 	int i, ncpu;
@@ -82,7 +83,8 @@ set_epp(char *arg) {
 }
 
 static int
-print_epp(void) {
+print_epp(void)
+{
 	size_t size, val;
 	char buf[32];
 	int i, ncpu;
