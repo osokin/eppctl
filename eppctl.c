@@ -137,9 +137,11 @@ main(int argc, char *argv[])
 	}
 
 	if (value == NULL) {
-		print_epp();
+		if (print_epp() < 0)
+			exit(1);
 	} else {
-		set_epp(value);
+		if (set_epp(value) < 0)
+			exit(1);
 	}
 
 	return (0);
