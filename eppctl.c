@@ -42,7 +42,7 @@ get_epp_ncpu(void)
 
 	size = sizeof(int);
 	if (sysctlbyname("hw.ncpu", &ncpu, &size, NULL, 0) < 0) {
-		warn("sysctlbyname(%s)", "hw.cpu");
+		warn("sysctlbyname(%s)", "hw.ncpu");
 		return (-1);
 	}
 
