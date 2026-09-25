@@ -85,9 +85,9 @@ set_epp(char *arg)
 static int
 print_epp(void)
 {
-	size_t size, val;
+	size_t size;
 	char buf[32];
-	int i, ncpu;
+	int i, ncpu, val;
 
 	size = sizeof(int);
 
@@ -103,7 +103,7 @@ print_epp(void)
 				return (-1);
 			}
 
-			printf("%s: %zu\n", buf, val);
+			printf("%s: %d\n", buf, val);
 		}
 	}
 
