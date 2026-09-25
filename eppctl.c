@@ -67,8 +67,6 @@ set_epp(char *arg)
 			}
 		}
 	}
-
-	return (0);
 }
 
 static int
@@ -97,8 +95,6 @@ print_epp(void)
 
 		printf("%s: %d\n", buf, val);
 	}
-
-	return (0);
 }
 
 static void
