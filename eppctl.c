@@ -124,9 +124,9 @@ main(int argc, char *argv[])
 	int c;
 	char *value = NULL;
 
-	while ((c = getopt(argc, argv, "hn:")) != -1) {
+	while ((c = getopt(argc, argv, "hs:")) != -1) {
 		switch (c) {
-		case 'n':
+		case 's':
 			value = optarg;
 			break;
 		case 'h':
