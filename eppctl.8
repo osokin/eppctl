@@ -31,12 +31,19 @@
 .Nd list and modify CPU Energy/Performance properties
 .Sh SYNOPSIS
 .Nm
-.Op Fl hs
-.Op Ar value
+.Op Fl h
+.Op Fl s Ar value
 .Sh DESCRIPTION
 The
 .Nm
 utility is used to set and display CPU Energy/Performance properties.
+.Pp
+The options are as follows:
+.Bl -tag -width "-s value"
+.It Fl s Ar value
+Choose a specific value from 0 to 100.
+.It Fl h
+Print a help message.
 .Sh SEE ALSO
 .Xr hwpstate_intel 4 ,
 .Xr sysctl 8
