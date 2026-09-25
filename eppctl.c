@@ -53,14 +53,15 @@ static int
 set_epp(char *arg)
 {
 	size_t size;
-	char buf[32], *endptr;
+	char buf[32];
 	int i, ncpu, val;
+	const char *errstr;
 
 	if (arg != NULL) {
 		errno = 0;
-		val = strtol(arg, &endptr, 10);
-		if (errno == ERANGE || endptr == arg || *endptr != '\0') {
-			warn("strtol(%s)", arg);
+		val = strtonum(arg, 0, 100, &errstr);
+		if (errstr != NULL) {
+			warn("strtonum(%s)", arg);
 			return (-1);
 		}
 	}
@@ -113,7 +114,7 @@ print_epp(void)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-hn] [value]\n",
+	fprintf(stderr, "usage: %s [-h] [-s value]\n",
 	    getprogname());
 	exit(1);
 }
