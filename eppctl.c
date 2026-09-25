@@ -61,7 +61,7 @@ set_epp(char *arg)
 		errno = 0;
 		val = strtonum(arg, 0, 100, &errstr);
 		if (errstr != NULL) {
-			warn("strtonum(%s)", arg);
+			warnx("strtonum(%s): %s", arg, errstr);
 			return (-1);
 		}
 	}
