@@ -58,7 +58,6 @@ set_epp(char *arg)
 	const char *errstr;
 
 	if (arg != NULL) {
-		errno = 0;
 		val = strtonum(arg, 0, 100, &errstr);
 		if (errstr != NULL) {
 			warnx("strtonum(%s): %s", arg, errstr);
