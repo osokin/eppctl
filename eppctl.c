@@ -66,12 +66,12 @@ set_epp(char *arg)
 		}
 	}
 
-	size = sizeof(int);
-
 	ncpu = get_epp_ncpu();
 
 	if (ncpu >= 0) {
 		for (i = 0; i < ncpu; i++) {
+			size = sizeof(int);
+
 			snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
 			if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
 				warn("sysctlbyname(%s)", buf);
