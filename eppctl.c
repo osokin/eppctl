@@ -55,7 +55,7 @@ set_epp(char *arg)
 			if (errno == ENOENT) {
 				/*
 				 * We are probably done here.  There's no
-				 * more CPUs for update their setting.
+				 * more CPUs to update.
 				 */
 				return (0);
 			} else {
@@ -83,7 +83,7 @@ print_epp(void)
 			if (errno == ENOENT) {
 				/*
 				 * We are probably done here.  There's no
-				 * more CPUs for update their setting.
+				 * more CPUs to update.
 				 */
 				return (0);
 			} else {
@@ -122,6 +122,12 @@ main(int argc, char *argv[])
 		default:
 			usage();
 		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (argc > 0) {
+		usage();
 	}
 
 	if (value == NULL) {
