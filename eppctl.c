@@ -68,7 +68,7 @@ get_epp(int *v, int maxid)
 }
 
 static int
-set_epp(int *v, int ncpu, int val)
+set_epp(const int *v, int ncpu, int val)
 {
 	char buf[64];
 	int i, j;
@@ -108,7 +108,7 @@ set_epp(int *v, int ncpu, int val)
 }
 
 static void
-print_epp(int *v, int ncpu)
+print_epp(const int *v, int ncpu)
 {
 	int i;
 
