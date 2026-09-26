@@ -99,8 +99,11 @@ set_epp(struct map **kv, int ncpu, int val)
 			 */
 
 			for (j = 0; j < i; j++) {
-				snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", j);
-				if (sysctlbyname(buf, NULL, NULL, &kv[j]->val, sizeof(kv[j]->val)) < 0)
+				snprintf(buf, sizeof(buf),
+					 "dev.hwpstate_intel.%d.epp", j);
+				if (sysctlbyname(buf, NULL, NULL,
+						 &kv[j]->val,
+						 sizeof(kv[j]->val)) < 0)
 					warn("rollback of %s failed", buf);
 			}
 
@@ -109,7 +112,8 @@ set_epp(struct map **kv, int ncpu, int val)
 	}
 
 	for (i = 0; i < ncpu; i++)
-		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n", kv[i]->cpu, kv[i]->val, val);
+		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n",
+		       kv[i]->cpu, kv[i]->val, val);
 
 	return (0);
 }
@@ -120,7 +124,8 @@ print_epp(struct map **kv, int ncpu)
 	int i;
 
 	for (i = 0; i < ncpu; i++)
-		printf("dev.hwpstate_intel.%d.epp: %d\n", kv[i]->cpu, kv[i]->val);
+		printf("dev.hwpstate_intel.%d.epp: %d\n",
+		       kv[i]->cpu, kv[i]->val);
 }
 
 static void
