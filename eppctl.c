@@ -80,16 +80,13 @@ get_epp(struct map **kv, int maxid)
 static int
 set_epp(struct map **kv, int ncpu, int val)
 {
-	size_t size;
 	char buf[64];
 	int i, j;
 	int errfail;
 
 	for (i = 0; i < ncpu; i++) {
-		size = sizeof(int);
-
 		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
-		if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
+		if (sysctlbyname(buf, NULL, 0, &val, sizeof(val)) < 0) {
 			errfail = errno;
 			if (errfail == ENOENT) {
 				warnx("unexpected end of CPU list at %s", buf);
