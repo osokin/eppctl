@@ -90,9 +90,9 @@ set_epp(const int *v, int ncpu, int val)
 
 			for (j = 0; j < i; j++) {
 				snprintf(buf, sizeof(buf),
-					 "dev.hwpstate_intel.%d.epp", j);
+				    "dev.hwpstate_intel.%d.epp", j);
 				if (sysctlbyname(buf, NULL, NULL, &v[j],
-						 sizeof(v[j])) < 0)
+					sizeof(v[j])) < 0)
 					warn("rollback of %s failed", buf);
 			}
 
@@ -102,7 +102,7 @@ set_epp(const int *v, int ncpu, int val)
 
 	for (i = 0; i < ncpu; i++)
 		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n",
-		       i, v[i], val);
+		    i, v[i], val);
 
 	return (0);
 }
@@ -114,7 +114,7 @@ print_epp(const int *v, int ncpu)
 
 	for (i = 0; i < ncpu; i++)
 		printf("dev.hwpstate_intel.%d.epp: %d\n",
-		       i, v[i]);
+		    i, v[i]);
 }
 
 static void
