@@ -81,7 +81,7 @@ static int
 set_epp(struct map **kv, int ncpu, char *arg)
 {
 	size_t size;
-	char buf[64], fail[64];
+	char buf[64];
 	int i, j, val;
 	int errfail;
 	const char *errstr;
@@ -112,10 +112,9 @@ set_epp(struct map **kv, int ncpu, char *arg)
 				snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", j);
 				if (sysctlbyname(buf, NULL, NULL, &kv[j]->val, sizeof(kv[j]->val)) < 0)
 						warn("rollback of %s failed", buf);
-				}
-				return (-1);
-
 			}
+
+			return (-1);
 		}
 	}
 
