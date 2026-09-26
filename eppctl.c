@@ -81,6 +81,7 @@ set_epp(struct map **kv, int ncpu, char *arg)
 	size_t size;
 	char buf[64], fail[64];
 	int i, j, val;
+	int errfail;
 	const char *errstr;
 
 	val = strtonum(arg, 0, 100, &errstr);
@@ -94,6 +95,7 @@ set_epp(struct map **kv, int ncpu, char *arg)
 
 		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
 		if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
+			errfail = errno;
 			if (errno == ENOENT) {
 				/*
 				 * We are probably done here.  There's no
@@ -102,7 +104,7 @@ set_epp(struct map **kv, int ncpu, char *arg)
 				warnx("unexpected end of CPU list at %s", buf);
 				return (-1);
 
-			} else if (errno == EPERM) {
+			} else {
 				/*
 				 * Something goes wrong here, rollback
 				 * previous changes.
@@ -118,15 +120,14 @@ set_epp(struct map **kv, int ncpu, char *arg)
 						return (-1);
 					}
 				}
-				warn("sysctlbyname(%s) write", fail);
+				strerror(errfail);
 				return (-1);
 
-			} else {
-				warn("sysctlbyname(%s)", buf);
-				return (-1);
 			}
 		}
+	}
 
+	for (i = 0; i < ncpu; i++) {
 		printf("%s: %d -> %d\n", buf, kv[i]->val, val);
 	}
 
@@ -190,6 +191,9 @@ main(int argc, char *argv[])
 		free(kv);
 		exit(1);
 	}
+
+	if (ncpu == 0)
+		errx(1, "hwpstate_intel(4) not attached");
 
 	if (value == NULL) {
 		print_epp(kv, ncpu);
