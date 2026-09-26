@@ -131,7 +131,7 @@ print_epp(struct map **kv, int ncpu)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-h] [-s value]\n\twhere value from 0 to 255\n",
+	fprintf(stderr, "usage: %s [-h] [-s value]\n",
 	    getprogname());
 	exit(1);
 }
