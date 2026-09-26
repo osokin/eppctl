@@ -78,19 +78,12 @@ get_epp(struct map **kv, int maxid)
 }
 
 static int
-set_epp(struct map **kv, int ncpu, char *arg)
+set_epp(struct map **kv, int ncpu, int val)
 {
 	size_t size;
 	char buf[64];
-	int i, j, val;
+	int i, j;
 	int errfail;
-	const char *errstr;
-
-	val = strtonum(arg, 0, 100, &errstr);
-	if (errstr != NULL) {
-		warnx("strtonum(%s): %s", arg, errstr);
-		return (-1);
-	}
 
 	for (i = 0; i < ncpu; i++) {
 		size = sizeof(int);
@@ -146,10 +139,11 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int c, i, maxid, ncpu, retcode = 0;
+	int c, i, maxid, ncpu, retcode = 0, val = 0;
 	char *value = NULL;
 	size_t len = sizeof(maxid);
 	struct map **kv = NULL;
+	const char *errstr;
 
 	while ((c = getopt(argc, argv, "hs:")) != -1) {
 		switch (c) {
@@ -167,6 +161,12 @@ main(int argc, char *argv[])
 
 	if (argc > 0) {
 		usage();
+	}
+
+	if (value != NULL) {
+		val = strtonum(value, 0, 100, &errstr);
+		if (errstr != NULL)
+			errx(1, "strtonum(%s): %s", value, errstr);
 	}
 
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
@@ -190,7 +190,7 @@ main(int argc, char *argv[])
 		print_epp(kv, ncpu);
 		retcode = 0;
 	} else {
-		if (set_epp(kv, ncpu, value) < 0)
+		if (set_epp(kv, ncpu, val) < 0)
 			retcode = 1;
 	}
 
