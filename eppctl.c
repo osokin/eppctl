@@ -159,7 +159,7 @@ main(int argc, char *argv[])
 	if (value != NULL) {
 		val = strtonum(value, 0, 255, &errstr);
 		if (errstr != NULL)
-			errx(1, "strtonum(%s): %s", value, errstr);
+			errx(1, "value %s %s (0-255)", value, errstr);
 	}
 
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
