@@ -98,31 +98,21 @@ set_epp(struct map **kv, int ncpu, char *arg)
 		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
 		if (sysctlbyname(buf, NULL, 0, &val, size) < 0) {
 			errfail = errno;
-			if (errno == ENOENT) {
-				/*
-				 * We are probably done here.  There's no
-				 * more CPUs to update.
-				 */
+			if (errfail == ENOENT) {
 				warnx("unexpected end of CPU list at %s", buf);
 				return (-1);
+			}
+			warnc(errfail, "%s", buf);
+			/*
+			 * Something goes wrong here, rollback
+			 * previous changes.
+			 */
 
-			} else {
-				/*
-				 * Something goes wrong here, rollback
-				 * previous changes.
-				 */
-				strlcpy(fail, buf, sizeof(fail));
-
-				for (j = 0; j < i; j++) {
-					size = sizeof(int);
-
-					snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", j);
-					if (sysctlbyname(buf, NULL, 0, &kv[j]->val, size) < 0) {
-						warn("sysctlbyname(%s)", buf);
-						return (-1);
-					}
+			for (j = 0; j < i; j++) {
+				snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", j);
+				if (sysctlbyname(buf, NULL, NULL, &kv[j]->val, sizeof(kv[j]->val)) < 0)
+						warn("rollback of %s failed", buf);
 				}
-				warnc(errfail, "sysctlbyname(%s)", fail);
 				return (-1);
 
 			}
