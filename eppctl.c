@@ -122,7 +122,7 @@ set_epp(struct map **kv, int ncpu, char *arg)
 						return (-1);
 					}
 				}
-				strerror(errfail);
+				warnc(errfail, "sysctlbyname(%s)", fail);
 				return (-1);
 
 			}
@@ -130,7 +130,7 @@ set_epp(struct map **kv, int ncpu, char *arg)
 	}
 
 	for (i = 0; i < ncpu; i++) {
-		printf("%s: %d -> %d\n", buf, kv[i]->val, val);
+		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n", kv[i]->cpu, kv[i]->val, val);
 	}
 
 	return (0);
