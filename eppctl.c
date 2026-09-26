@@ -97,7 +97,7 @@ set_epp(struct map **kv, int ncpu, int val)
 			}
 			warnc(errfail, "%s", buf);
 			/*
-			 * Something goes wrong here, rollback
+			 * Something went wrong here, rollback
 			 * previous changes.
 			 */
 
