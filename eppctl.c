@@ -104,7 +104,7 @@ set_epp(struct map **kv, int ncpu, int val)
 			for (j = 0; j < i; j++) {
 				snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", j);
 				if (sysctlbyname(buf, NULL, NULL, &kv[j]->val, sizeof(kv[j]->val)) < 0)
-						warn("rollback of %s failed", buf);
+					warn("rollback of %s failed", buf);
 			}
 
 			return (-1);
