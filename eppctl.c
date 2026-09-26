@@ -1,4 +1,6 @@
 /*
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
  * Copyright (c) 2026 Sergey A. Osokin
  *
  * This software was developed by Sergey A. Osokin <osa@FreeBSD.org>
