@@ -37,13 +37,8 @@
 #include <string.h>
 #include <unistd.h>
 
-struct map {
-	int cpu;
-	int val;
-};
-
 static int
-get_epp(struct map **kv, int maxid)
+get_epp(int *v, int maxid)
 {
 	size_t size;
 	char buf[64];
@@ -66,19 +61,14 @@ get_epp(struct map **kv, int maxid)
 			}
 		}
 
-		kv[i] = malloc(sizeof(struct map));
-		if (kv[i] == NULL)
-			err(1, "malloc");
-
-		kv[i]->cpu = i;
-		kv[i]->val = val;
+		v[i] = val;
 	}
 
 	return (i);
 }
 
 static int
-set_epp(struct map **kv, int ncpu, int val)
+set_epp(int *v, int ncpu, int val)
 {
 	char buf[64];
 	int i, j;
@@ -101,9 +91,8 @@ set_epp(struct map **kv, int ncpu, int val)
 			for (j = 0; j < i; j++) {
 				snprintf(buf, sizeof(buf),
 					 "dev.hwpstate_intel.%d.epp", j);
-				if (sysctlbyname(buf, NULL, NULL,
-						 &kv[j]->val,
-						 sizeof(kv[j]->val)) < 0)
+				if (sysctlbyname(buf, NULL, NULL, &v[j],
+						 sizeof(v[j])) < 0)
 					warn("rollback of %s failed", buf);
 			}
 
@@ -113,19 +102,19 @@ set_epp(struct map **kv, int ncpu, int val)
 
 	for (i = 0; i < ncpu; i++)
 		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n",
-		       kv[i]->cpu, kv[i]->val, val);
+		       i, v[i], val);
 
 	return (0);
 }
 
 static void
-print_epp(struct map **kv, int ncpu)
+print_epp(int *v, int ncpu)
 {
 	int i;
 
 	for (i = 0; i < ncpu; i++)
 		printf("dev.hwpstate_intel.%d.epp: %d\n",
-		       kv[i]->cpu, kv[i]->val);
+		       i, v[i]);
 }
 
 static void
@@ -139,10 +128,10 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int c, i, maxid, ncpu, retcode = 0, val = 0;
+	int c, maxid, ncpu, retcode = 0, val = 0;
 	char *value = NULL;
 	size_t len = sizeof(maxid);
-	struct map **kv = NULL;
+	int *v;
 	const char *errstr;
 
 	while ((c = getopt(argc, argv, "hs:")) != -1) {
@@ -170,30 +159,21 @@ main(int argc, char *argv[])
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
 		err(1, "sysctlbyname(kern.smp.maxid)");
 
-	kv = calloc(maxid + 1, sizeof(struct map *));
-	if (kv == NULL)
+	v = calloc(maxid + 1, sizeof(*v));
+	if (v == NULL)
 		err(1, "calloc");
 
-	if ((ncpu = get_epp(kv, maxid)) < 0) {
-		for (i = 0; i <= maxid && kv[i] != NULL; i++)
-			free(kv[i]);
-		free(kv);
-		exit(1);
-	}
+	if ((ncpu = get_epp(v, maxid)) < 0)
+		retcode = 1;
+	else if (ncpu == 0) {
+		warnx("hwpstate_intel(4) not attached");
+		retcode = 1;
+	} else if (value == NULL) {
+		print_epp(v, ncpu);
+	} else if (set_epp(v, ncpu, val) < 0)
+		retcode = 1;
 
-	if (ncpu == 0)
-		errx(1, "hwpstate_intel(4) not attached");
-
-	if (value == NULL) {
-		print_epp(kv, ncpu);
-	} else {
-		if (set_epp(kv, ncpu, val) < 0)
-			retcode = 1;
-	}
-
-	for (i = 0; i <= maxid && kv[i] != NULL; i++)
-		free(kv[i]);
-	free(kv);
+	free(v);
 
 	return (retcode);
 }
