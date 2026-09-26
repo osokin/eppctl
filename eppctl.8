@@ -36,7 +36,20 @@
 .Sh DESCRIPTION
 The
 .Nm
-utility is used to set and display CPU Energy/Performance properties.
+utility is used to set and display CPU Energy/Performance properties.  On
+.Fx 16.0
+and later,
+.Ar value
+is the raw hardware setting, from 0 to 255.
+Earlier releases use a percentage, from 0 to 100.
+Without options,
+.Nm
+prints the current value for every CPU.
+With
+.Fl s ,
+it sets every CPU and prints the old and new values.
+If any CPU cannot be updated, the CPUs already changed
+are restored to their previous values.
 .Pp
 The options are as follows:
 .Bl -tag -width ".Fl s Ar value"
