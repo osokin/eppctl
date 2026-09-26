@@ -25,20 +25,62 @@
  * SUCH DAMAGE.
  */
 
+#include <sys/types.h>
 #include <sys/sysctl.h>
 
 #include <err.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
+struct map {
+	int cpu;
+	int val;
+};
+
 static int
-set_epp(char *arg)
+get_epp(struct map **kv, int maxid)
 {
 	size_t size;
-	char buf[32];
+	char buf[64];
 	int i, val;
+
+	for (i = 0; i <= maxid; i++) {
+		size = sizeof(int);
+		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
+
+		if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
+			if (errno == ENOENT) {
+				/*
+				 * We are probably done here.  There's no
+				 * more CPUs to read.
+				 */
+				break;
+			} else {
+				warn("sysctlbyname(%s)", buf);
+				return (-1);
+			}
+		}
+
+		kv[i] = malloc(sizeof(struct map));
+		if (kv[i] == NULL)
+			err(1, "malloc");
+
+		kv[i]->cpu = i;
+		kv[i]->val = val;
+	}
+
+	return (i);
+}
+
+static int
+set_epp(struct map **kv, int ncpu, char *arg)
+{
+	size_t size;
+	char buf[64], fail[64];
+	int i, j, val;
 	const char *errstr;
 
 	val = strtonum(arg, 0, 100, &errstr);
@@ -47,7 +89,7 @@ set_epp(char *arg)
 		return (-1);
 	}
 
-	for (i = 0; ; i++) {
+	for (i = 0; i < ncpu; i++) {
 		size = sizeof(int);
 
 		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
@@ -57,51 +99,54 @@ set_epp(char *arg)
 				 * We are probably done here.  There's no
 				 * more CPUs to update.
 				 */
-				return (0);
-			} else {
-				warn("sysctlbyname(%s)", buf);
+				warnx("unexpected end of CPU list at %s", buf);
 				return (-1);
-			}
-		}
-	}
 
-	return (0);
-}
-
-static int
-print_epp(void)
-{
-	size_t size;
-	char buf[32];
-	int i, val;
-
-	for (i = 0; ; i++) {
-		size = sizeof(int);
-
-		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
-		if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
-			if (errno == ENOENT) {
+			} else if (errno == EPERM) {
 				/*
-				 * We are probably done here.  There's no
-				 * more CPUs to update.
+				 * Something goes wrong here, rollback
+				 * previous changes.
 				 */
-				return (0);
+				strlcpy(fail, buf, sizeof(fail));
+
+				for (j = 0; j < i; j++) {
+					size = sizeof(int);
+
+					snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", j);
+					if (sysctlbyname(buf, NULL, 0, &kv[j]->val, size) < 0) {
+						warn("sysctlbyname(%s)", buf);
+						return (-1);
+					}
+				}
+				warn("sysctlbyname(%s) write", fail);
+				return (-1);
+
 			} else {
 				warn("sysctlbyname(%s)", buf);
 				return (-1);
 			}
 		}
 
-		printf("%s: %d\n", buf, val);
+		printf("%s: %d -> %d\n", buf, kv[i]->val, val);
 	}
 
 	return (0);
 }
 
 static void
+print_epp(struct map **kv, int ncpu)
+{
+	int i;
+
+	for (i = 0; i < ncpu; i++) {
+		printf("dev.hwpstate_intel.%d.epp: %d\n", kv[i]->cpu, kv[i]->val);
+	}
+}
+
+static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-h] [-s value]\n",
+	fprintf(stderr, "usage: %s [-h] [-s value]\n\twhere value from 0 to 100\n",
 	    getprogname());
 	exit(1);
 }
@@ -109,8 +154,10 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int c;
+	int c, i, maxid, ncpu, retcode = 0;
 	char *value = NULL;
+	size_t len = sizeof(maxid);
+	struct map **kv = NULL;
 
 	while ((c = getopt(argc, argv, "hs:")) != -1) {
 		switch (c) {
@@ -130,13 +177,31 @@ main(int argc, char *argv[])
 		usage();
 	}
 
-	if (value == NULL) {
-		if (print_epp() < 0)
-			exit(1);
-	} else {
-		if (set_epp(value) < 0)
-			exit(1);
+	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
+		err(1, "sysctlbyname(kern.smp.maxid)");
+
+	kv = calloc(maxid + 1, sizeof(struct map *));
+	if (kv == NULL)
+		err(1, "calloc");
+
+	if ((ncpu = get_epp(kv, maxid)) < 0) {
+		for (i = 0; i <= maxid && kv[i] != NULL; i++)
+			free(kv[i]);
+		free(kv);
+		exit(1);
 	}
 
-	return (0);
+	if (value == NULL) {
+		print_epp(kv, ncpu);
+		retcode = 0;
+	} else {
+		if (set_epp(kv, ncpu, value) < 0)
+			retcode = 1;
+	}
+
+	for (i = 0; i <= maxid && kv[i] != NULL; i++)
+		free(kv[i]);
+	free(kv);
+
+	return (retcode);
 }
