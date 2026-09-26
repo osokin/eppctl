@@ -108,9 +108,8 @@ set_epp(struct map **kv, int ncpu, int val)
 		}
 	}
 
-	for (i = 0; i < ncpu; i++) {
+	for (i = 0; i < ncpu; i++)
 		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n", kv[i]->cpu, kv[i]->val, val);
-	}
 
 	return (0);
 }
@@ -120,9 +119,8 @@ print_epp(struct map **kv, int ncpu)
 {
 	int i;
 
-	for (i = 0; i < ncpu; i++) {
+	for (i = 0; i < ncpu; i++)
 		printf("dev.hwpstate_intel.%d.epp: %d\n", kv[i]->cpu, kv[i]->val);
-	}
 }
 
 static void
@@ -154,11 +152,9 @@ main(int argc, char *argv[])
 		}
 	}
 	argc -= optind;
-	argv += optind;
 
-	if (argc > 0) {
+	if (argc > 0)
 		usage();
-	}
 
 	if (value != NULL) {
 		val = strtonum(value, 0, 100, &errstr);
