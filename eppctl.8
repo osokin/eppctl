@@ -39,11 +39,22 @@ The
 utility is used to set and display CPU Energy/Performance properties.
 .Pp
 The options are as follows:
-.Bl -tag -width "-s value"
+.Bl -tag -width ".Fl s Ar value"
 .It Fl h
 Print a help message.
 .It Fl s Ar value
-Choose a specific value from 0 to 255; root privileges are required.
+Choose a specific
+.Pa value
+from 0 to 255, where:
+.Pp
+.Bl -tag -width ".Cm reopen" -compact
+.It Cm 0
+.Dv most performant
+.It Cm 255
+.Dv most energy efficient
+.El
+.Pp
+root privileges are required.
 .El
 .Sh EXIT STATUS
 .Ex -std
