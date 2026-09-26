@@ -186,7 +186,6 @@ main(int argc, char *argv[])
 
 	if (value == NULL) {
 		print_epp(kv, ncpu);
-		retcode = 0;
 	} else {
 		if (set_epp(kv, ncpu, val) < 0)
 			retcode = 1;
