@@ -45,7 +45,7 @@ get_epp(int *v, int maxid)
 	int i, val;
 
 	for (i = 0; i <= maxid; i++) {
-		size = sizeof(int);
+		size = sizeof(val);
 		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
 
 		if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
