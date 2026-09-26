@@ -140,7 +140,6 @@ main(int argc, char *argv[])
 			value = optarg;
 			break;
 		case 'h':
-		case '?':
 		default:
 			usage();
 		}
