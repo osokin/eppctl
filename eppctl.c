@@ -126,7 +126,7 @@ print_epp(struct map **kv, int ncpu)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-h] [-s value]\n\twhere value from 0 to 100\n",
+	fprintf(stderr, "usage: %s [-h] [-s value]\n\twhere value from 0 to 255\n",
 	    getprogname());
 	exit(1);
 }
@@ -157,7 +157,7 @@ main(int argc, char *argv[])
 		usage();
 
 	if (value != NULL) {
-		val = strtonum(value, 0, 100, &errstr);
+		val = strtonum(value, 0, 255, &errstr);
 		if (errstr != NULL)
 			errx(1, "strtonum(%s): %s", value, errstr);
 	}
