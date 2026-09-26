@@ -163,15 +163,16 @@ main(int argc, char *argv[])
 	if (v == NULL)
 		err(1, "calloc");
 
-	if ((ncpu = get_epp(v, maxid)) < 0)
+	if ((ncpu = get_epp(v, maxid)) < 0) {
 		retcode = 1;
-	else if (ncpu == 0) {
+	} else if (ncpu == 0) {
 		warnx("hwpstate_intel(4) not attached");
 		retcode = 1;
 	} else if (value == NULL) {
 		print_epp(v, ncpu);
-	} else if (set_epp(v, ncpu, val) < 0)
+	} else if (set_epp(v, ncpu, val) < 0) {
 		retcode = 1;
+	}
 
 	free(v);
 
