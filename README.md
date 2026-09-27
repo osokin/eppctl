@@ -1,13 +1,16 @@
 # eppctl
 
 `eppctl` displays and sets the Energy/Performance Preference (EPP) of
+AMD CPUs with Collaborative Processor Performance Control (CPPC) or
 Intel CPUs with Hardware-Controlled Performance States (HWP) on FreeBSD.
-It uses the `dev.hwpstate_intel.N.epp` sysctls provided by the
-`hwpstate_intel(4)` driver, and applies one value to every CPU at once.
+It uses the `dev.hwpstate_amd.N.epp` or `dev.hwpstate_intel.N.epp` sysctls
+provided by the `hwpstate_amd(4)` and `hwpstate_intel(4)` driver
+correspondingly, and applies one value to every CPU at once.
 
 ## Requirements
 
-- FreeBSD with `hwpstate_intel(4)` attached (Intel CPU with HWP enabled)
+- FreeBSD with `hwpstate_amd(4)` or `hwpstate_intel(4)` attached
+  (Intel CPU with HWP or AMD CPU with CPPC enabled)
 - root privileges to change the setting
 
 ## Build and install
@@ -48,4 +51,4 @@ changed to their previous values and exits with status 1.
 
 ## See also
 
-`eppctl(8)`, `hwpstate_intel(4)`, `sysctl(8)`
+`eppctl(8)`, `hwpstate_amd(4)`, `hwpstate_intel(4)`, `sysctl(8)`
