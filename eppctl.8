@@ -36,12 +36,7 @@
 .Sh DESCRIPTION
 The
 .Nm
-utility is used to set and display CPU Energy/Performance properties.  On
-.Fx 16.0
-and later,
-.Ar value
-is the raw hardware setting, from 0 to 255.
-Earlier releases use a percentage, from 0 to 100.
+utility is used to set and display CPU Energy/Performance properties.
 Without options,
 .Nm
 prints the current value for every CPU.
@@ -69,6 +64,13 @@ most energy efficient
 .Pp
 Root privileges are required.
 .El
+.Sh VALUES
+On
+.Fx 16.0
+and later,
+.Ar value
+is the raw hardware setting, from 0 to 255.
+Earlier releases use a percentage, from 0 to 100.
 .Sh EXIT STATUS
 .Ex -std
 .Sh EXAMPLES
