@@ -133,6 +133,12 @@ main(int argc, char *argv[])
 	size_t len = sizeof(maxid);
 	int *v;
 	const char *errstr;
+	const int maxval =
+#if (__FreeBSD_version < 1600019)
+			    100;
+#else
+			    255;
+#endif
 
 	while ((c = getopt(argc, argv, "hs:")) != -1) {
 		switch (c) {
@@ -150,9 +156,9 @@ main(int argc, char *argv[])
 		usage();
 
 	if (value != NULL) {
-		val = strtonum(value, 0, 255, &errstr);
+		val = strtonum(value, 0, maxval, &errstr);
 		if (errstr != NULL)
-			errx(1, "value %s %s (0-255)", value, errstr);
+			errx(1, "value %s %s (0-%d)", value, errstr, maxval);
 	}
 
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
