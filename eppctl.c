@@ -174,7 +174,7 @@ main(int argc, char *argv[])
 		}
 	}
 
-	if (archerr == 2)
+	if (archerr == (int)nitems(arch))
 		errx(1, "there's no attached hwpstate drivers");
 
 	if (value != NULL) {
