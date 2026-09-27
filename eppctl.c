@@ -92,7 +92,7 @@ set_epp(const int *v, int ncpu, int val)
 				snprintf(buf, sizeof(buf),
 				    "dev.hwpstate_intel.%d.epp", j);
 				if (sysctlbyname(buf, NULL, NULL, &v[j],
-					    sizeof(v[j])) < 0)
+				    sizeof(v[j])) < 0)
 					warn("rollback of %s failed", buf);
 			}
 
