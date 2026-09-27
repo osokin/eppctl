@@ -52,3 +52,7 @@ changed to their previous values and exits with status 1.
 ## See also
 
 `eppctl(8)`, `hwpstate_amd(4)`, `hwpstate_intel(4)`, `sysctl(8)`
+
+## External links
+
+[Collaborative Processor Performance Control (CPPC)](https://www.freebsd.org/status/report-2026-01-2026-03/cppc/)
