@@ -121,8 +121,7 @@ print_epp(const int *v, int ncpu)
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-h] [-s value]\n",
-	    getprogname());
+	fprintf(stderr, "usage: %s [-h] [-s value]\n", getprogname());
 	exit(1);
 }
 
