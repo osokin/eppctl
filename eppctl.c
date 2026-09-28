@@ -39,33 +39,66 @@
 #include <unistd.h>
 
 static int
-get_epp(const char *arch, int *v, int maxid)
+get_one_epp(const char *arch, int cpuid)
 {
 	size_t size;
 	char buf[64];
+	int val = 0;
+
+	size = sizeof(val);
+	snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, cpuid);
+
+	if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
+		if (errno == ENOENT) {
+			/* no entity */
+			return (-2);
+		} else {
+			warn("sysctlbyname(%s)", buf);
+			return (-1);
+		}
+	}
+
+	return val;
+}
+
+static int
+get_epp(const char *arch, int *v, int maxid)
+{
 	int i, val;
 
 	for (i = 0; i <= maxid; i++) {
-		size = sizeof(val);
-		snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, i);
-
-		if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
-			if (errno == ENOENT) {
-				/*
-				 * We are probably done here.  There's no
-				 * more CPUs to read.
-				 */
-				break;
-			} else {
-				warn("sysctlbyname(%s)", buf);
-				return (-1);
-			}
+		if ((val = get_one_epp(arch, i)) == -2) {
+			break;
+		} else if (val < 0) {
+			return (-1);
+		} else {
+			v[i] = val;
 		}
-
-		v[i] = val;
 	}
 
 	return (i);
+}
+
+static int
+set_one_epp(const char *arch, int cpuid, int prevepp, int currepp)
+{
+	char buf[64];
+	int errfail;
+
+	snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, cpuid);
+	if (sysctlbyname(buf, NULL, NULL, &currepp, sizeof(currepp)) < 0) {
+		errfail = errno;
+		if (errfail == ENOENT)
+			warnx("sysctlbyname(%s) is unknown", buf);
+		else
+			warnc(errfail, "%s", buf);
+
+		return (-1);
+	}
+
+	printf("dev.hwpstate_%s.%d.epp: %d -> %d\n", arch, cpuid, prevepp, currepp);
+
+	return (0);
 }
 
 static int
@@ -109,26 +142,33 @@ set_epp(const char *arch, const int *v, int ncpu, int val)
 }
 
 static void
+print_one_epp(const char *arch, int cpuid, int currepp)
+{
+	printf("dev.hwpstate_%s.%d.epp: %d\n", arch, cpuid, currepp);
+}
+
+static void
 print_epp(const char *arch, const int *v, int ncpu)
 {
 	int i;
 
 	for (i = 0; i < ncpu; i++)
-		printf("dev.hwpstate_%s.%d.epp: %d\n",
-		    arch, i, v[i]);
+		print_one_epp(arch, i, v[i]);
 }
 
 static void
 usage(void)
 {
-	fprintf(stderr, "usage: %s [-h] [-s value]\n", getprogname());
+	fprintf(stderr, "usage: %s [-c cpuid] [-h] [-s value]\n",
+	    getprogname());
 	exit(1);
 }
 
 int
 main(int argc, char *argv[])
 {
-	int c, archerr = 0, i, maxid, ncpu, retcode = 0, val;
+	int c, archerr = 0, i, maxid, ncpu, retcode = 0, val = 0;
+	int cflag = 0, cpu = 0, *cpus = NULL, prevepp = 0;
 	char *value = NULL;
 	char buf[2][64];
 	size_t len = sizeof(maxid), size;
@@ -142,8 +182,18 @@ main(int argc, char *argv[])
 			    255;
 #endif
 
-	while ((c = getopt(argc, argv, "hs:")) != -1) {
+	while ((c = getopt(argc, argv, "c:hs:")) != -1) {
 		switch (c) {
+		case 'c':
+			cpu = (int)strtonum(optarg, 0, INT_MAX, &errstr);
+			if (errstr != NULL)
+				errx(1, "cpu number %s %s", optarg, errstr);
+			cflag++;
+			cpus = reallocarray(cpus, cflag, sizeof(*cpus));
+			if (cpus == NULL)
+				err(1, "reallocarray");
+			cpus[cflag - 1] = cpu;
+			break;
 		case 's':
 			value = optarg;
 			break;
@@ -185,6 +235,34 @@ main(int argc, char *argv[])
 
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
 		err(1, "sysctlbyname(kern.smp.maxid)");
+
+	for (i = 0; i < cflag; i++)
+		if (cpus[i] > maxid)
+			errx(1, "cpu %d: no such CPU (max is %d)", cpus[i], maxid);
+
+	if (cflag > 0) {
+		for (i = 0; i < cflag; i++) {
+			if ((prevepp = get_one_epp(detected_arch, cpus[i])) == -2) {
+				warnx("cpuid %d: no hwpstate node", cpus[i]);
+				retcode = 1;
+				break;
+			} else if (prevepp < 0) {
+				retcode 1;
+				break;
+			}
+			if (value != NULL) {
+				if (set_one_epp(detected_arch, cpus[i], prevepp, val) < 0) {
+					retcode = 1;
+					break;
+				}
+			} else {
+				print_one_epp(detected_arch, cpus[i], prevepp);
+			}
+		}
+
+		free(cpus);
+		return (retcode);
+	}
 
 	v = calloc(maxid + 1, sizeof(*v));
 	if (v == NULL)
