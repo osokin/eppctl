@@ -39,7 +39,7 @@
 #include <unistd.h>
 
 static int
-get_epp(int *v, int maxid)
+get_epp(const char *arch, int *v, int maxid)
 {
 	size_t size;
 	char buf[64];
@@ -47,7 +47,7 @@ get_epp(int *v, int maxid)
 
 	for (i = 0; i <= maxid; i++) {
 		size = sizeof(val);
-		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
+		snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, i);
 
 		if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
 			if (errno == ENOENT) {
@@ -69,14 +69,14 @@ get_epp(int *v, int maxid)
 }
 
 static int
-set_epp(const int *v, int ncpu, int val)
+set_epp(const char *arch, const int *v, int ncpu, int val)
 {
 	char buf[64];
 	int i, j;
 	int errfail;
 
 	for (i = 0; i < ncpu; i++) {
-		snprintf(buf, sizeof(buf), "dev.hwpstate_intel.%d.epp", i);
+		snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, i);
 		if (sysctlbyname(buf, NULL, NULL, &val, sizeof(val)) < 0) {
 			errfail = errno;
 			if (errfail == ENOENT) {
@@ -91,7 +91,7 @@ set_epp(const int *v, int ncpu, int val)
 
 			for (j = 0; j < i; j++) {
 				snprintf(buf, sizeof(buf),
-				    "dev.hwpstate_intel.%d.epp", j);
+				    "dev.hwpstate_%s.%d.epp", arch, j);
 				if (sysctlbyname(buf, NULL, NULL, &v[j],
 				    sizeof(v[j])) < 0)
 					warn("rollback of %s failed", buf);
@@ -102,20 +102,20 @@ set_epp(const int *v, int ncpu, int val)
 	}
 
 	for (i = 0; i < ncpu; i++)
-		printf("dev.hwpstate_intel.%d.epp: %d -> %d\n",
-		    i, v[i], val);
+		printf("dev.hwpstate_%s.%d.epp: %d -> %d\n",
+		    arch, i, v[i], val);
 
 	return (0);
 }
 
 static void
-print_epp(const int *v, int ncpu)
+print_epp(const char *arch, const int *v, int ncpu)
 {
 	int i;
 
 	for (i = 0; i < ncpu; i++)
-		printf("dev.hwpstate_intel.%d.epp: %d\n",
-		    i, v[i]);
+		printf("dev.hwpstate_%s.%d.epp: %d\n",
+		    arch, i, v[i]);
 }
 
 static void
@@ -128,11 +128,13 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int c, maxid, ncpu, retcode = 0, val = 0;
+	int c, archerr = 0, i, maxid, ncpu, retcode = 0, val;
 	char *value = NULL;
-	size_t len = sizeof(maxid);
+	char buf[2][64];
+	size_t len = sizeof(maxid), size;
 	int *v;
 	const char *errstr;
+	const char *arch[2] = {"amd", "intel"}, *detected_arch = NULL;
 	const int maxval =
 #if (__FreeBSD_version < 1600019)
 			    100;
@@ -155,6 +157,26 @@ main(int argc, char *argv[])
 	if (argc > 0)
 		usage();
 
+	for (i = 0; i < (int)nitems(arch); i++) {
+		size = 0;
+
+		snprintf(buf[i], sizeof(buf[i]), "dev.hwpstate_%s.0.%%desc", arch[i]);
+
+		if (sysctlbyname(buf[i], NULL, &size, NULL, 0) != 0) {
+			if (errno == ENOENT) {
+				archerr += 1;
+			} else {
+				err(1, "sysctlbyname(dev.hwpstate_%s.0.%%desc)", arch[i]);
+			}
+		} else {
+			detected_arch = arch[i];
+			break;
+		}
+	}
+
+	if (archerr == (int)nitems(arch))
+		errx(1, "there's no attached hwpstate drivers");
+
 	if (value != NULL) {
 		val = strtonum(value, 0, maxval, &errstr);
 		if (errstr != NULL)
@@ -168,14 +190,14 @@ main(int argc, char *argv[])
 	if (v == NULL)
 		err(1, "calloc");
 
-	if ((ncpu = get_epp(v, maxid)) < 0) {
+	if ((ncpu = get_epp(detected_arch, v, maxid)) < 0) {
 		retcode = 1;
 	} else if (ncpu == 0) {
-		warnx("hwpstate_intel(4) not attached");
+		warnx("hwpstate_%s(4) not attached", detected_arch);
 		retcode = 1;
 	} else if (value == NULL) {
-		print_epp(v, ncpu);
-	} else if (set_epp(v, ncpu, val) < 0) {
+		print_epp(detected_arch, v, ncpu);
+	} else if (set_epp(detected_arch, v, ncpu, val) < 0) {
 		retcode = 1;
 	}
 
