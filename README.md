@@ -10,7 +10,7 @@ correspondingly, and applies one value to every CPU at once.
 ## Requirements
 
 - FreeBSD with `hwpstate_amd(4)` or `hwpstate_intel(4)` attached
-  (Intel CPU with HWP or AMD CPU with CPPC enabled)
+  (AMD CPU with CPPC enabled or Intel CPU with HWP)
 - root privileges to change the setting
 
 ## Build and install
