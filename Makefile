@@ -1,6 +1,6 @@
 PROG=	eppctl
-SRCS=	eppctl.c
-MAN=	eppctl.8
+SRCS=	${PROG}.c
+MAN=	${PROG}.8
 WARNS=	6
 
 .include <bsd.prog.mk>
