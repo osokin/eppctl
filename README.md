@@ -23,7 +23,7 @@ make install
 ## Usage
 
 ```
-eppctl [-h] [-s value]
+eppctl [-c cpuid] [-h] [-s value]
 ```
 
 Without options, `eppctl` prints the current EPP of every CPU:
@@ -34,7 +34,15 @@ dev.hwpstate_intel.0.epp: 100
 dev.hwpstate_intel.1.epp: 100
 ```
 
-`-s value` sets every CPU to `value` and prints the old and new values:
+`-c cpuid` provides a specific CPU to work with:
+
+```
+$ eppctl -c 3
+dev.hwpstate_intel.3.epp: 50
+```
+
+`-s value` sets every (in case `-c cpuid` is not specified)
+CPU to `value` and prints the old and new values:
 
 ```
 # eppctl -s 0
