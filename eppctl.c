@@ -247,7 +247,7 @@ main(int argc, char *argv[])
 				retcode = 1;
 				break;
 			} else if (prevepp < 0) {
-				retcode 1;
+				retcode = 1;
 				break;
 			}
 			if (value != NULL) {
