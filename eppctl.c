@@ -32,10 +32,13 @@
 
 #include <err.h>
 #include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+
+#define	EPP_MAX		255
 
 static int
 get_one_epp(const char *arch, int cpuid)
@@ -69,6 +72,8 @@ set_epp(const char *arch, const int *ids, const int *old, int n, int val)
 		if (sysctlbyname(buf, NULL, NULL, &val, sizeof(val)) < 0) {
 			errfail = errno;
 			warnc(errfail, "%s", buf);
+			if (errfail == EINVAL && i == 0 && val > 100)
+				warnx("FreeBSD before 16.0 accepts only 0-100");
 
 			/* Roll back the CPUs already changed. */
 			for (j = 0; j < i; j++) {
@@ -109,20 +114,14 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int c, archerr = 0, i, j, maxid, n, retcode = 0, val = 0;
+	int c, i, j, maxid, n, retcode = 0, val = 0;
 	int cflag = 0, cpu = 0, *cpus = NULL;
 	char *value = NULL;
-	char buf[2][64];
+	char buf[64];
 	size_t len = sizeof(maxid), size;
 	int *v;
 	const char *errstr;
 	const char *arch[2] = {"amd", "intel"}, *detected_arch = NULL;
-	const int maxval =
-#if (__FreeBSD_version < 1600019)
-			    100;
-#else
-			    255;
-#endif
 
 	while ((c = getopt(argc, argv, "c:hs:")) != -1) {
 		switch (c) {
@@ -150,37 +149,31 @@ main(int argc, char *argv[])
 		usage();
 
 	if (value != NULL) {
-		val = strtonum(value, 0, maxval, &errstr);
+		val = strtonum(value, 0, EPP_MAX, &errstr);
 		if (errstr != NULL)
-			errx(1, "value %s %s (0-%d)", value, errstr, maxval);
+			errx(1, "value %s %s (0-%d)", value, errstr, EPP_MAX);
 	}
 
 	for (i = 0; i < (int)nitems(arch); i++) {
 		size = 0;
-
-		snprintf(buf[i], sizeof(buf[i]), "dev.hwpstate_%s.0.%%desc", arch[i]);
-
-		if (sysctlbyname(buf[i], NULL, &size, NULL, 0) != 0) {
-			if (errno == ENOENT) {
-				archerr += 1;
-			} else {
-				err(1, "sysctlbyname(dev.hwpstate_%s.0.%%desc)", arch[i]);
-			}
-		} else {
+		snprintf(buf, sizeof(buf), "dev.hwpstate_%s.0.%%desc", arch[i]);
+		if (sysctlbyname(buf, NULL, &size, NULL, 0) == 0) {
 			detected_arch = arch[i];
 			break;
 		}
+		if (errno != ENOENT)
+			err(1, "sysctlbyname(%s)", buf);
 	}
-
-	if (archerr == (int)nitems(arch))
-		errx(1, "there's no attached hwpstate drivers");
+	if (detected_arch == NULL)
+		errx(1, "no hwpstate_amd(4) or hwpstate_intel(4) attached");
 
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
 		err(1, "sysctlbyname(kern.smp.maxid)");
 
 	for (i = 0; i < cflag; i++) {
 		if (cpus[i] > maxid)
-			errx(1, "cpu %d: no such CPU (max is %d)", cpus[i], maxid);
+			errx(1, "cpu %d: no such CPU (max is %d)", cpus[i],
+			    maxid);
 		for (j = 0; j < i; j++)
 			if (cpus[j] == cpus[i])
 				errx(1, "cpu %d given more than once", cpus[i]);
