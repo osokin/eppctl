@@ -28,7 +28,6 @@
  */
 
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/sysctl.h>
 
 #include <err.h>
@@ -49,111 +48,54 @@ get_one_epp(const char *arch, int cpuid)
 	snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, cpuid);
 
 	if (sysctlbyname(buf, &val, &size, NULL, 0) < 0) {
-		if (errno == ENOENT) {
-			/* no entity */
+		if (errno == ENOENT)
 			return (-2);
-		} else {
-			warn("sysctlbyname(%s)", buf);
-			return (-1);
-		}
-	}
-
-	return val;
-}
-
-static int
-get_epp(const char *arch, int *v, int maxid)
-{
-	int i, val;
-
-	for (i = 0; i <= maxid; i++) {
-		if ((val = get_one_epp(arch, i)) == -2) {
-			break;
-		} else if (val < 0) {
-			return (-1);
-		} else {
-			v[i] = val;
-		}
-	}
-
-	return (i);
-}
-
-static int
-set_one_epp(const char *arch, int cpuid, int prevepp, int currepp)
-{
-	char buf[64];
-	int errfail;
-
-	snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, cpuid);
-	if (sysctlbyname(buf, NULL, NULL, &currepp, sizeof(currepp)) < 0) {
-		errfail = errno;
-		if (errfail == ENOENT)
-			warnx("sysctlbyname(%s) is unknown", buf);
-		else
-			warnc(errfail, "%s", buf);
-
+		warn("sysctlbyname(%s)", buf);
 		return (-1);
 	}
 
-	printf("dev.hwpstate_%s.%d.epp: %d -> %d\n", arch, cpuid, prevepp, currepp);
-
-	return (0);
+	return (val);
 }
 
 static int
-set_epp(const char *arch, const int *v, int ncpu, int val)
+set_epp(const char *arch, const int *ids, const int *old, int n, int val)
 {
 	char buf[64];
-	int i, j;
-	int errfail;
+	int errfail, i, j;
 
-	for (i = 0; i < ncpu; i++) {
-		snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch, i);
+	for (i = 0; i < n; i++) {
+		snprintf(buf, sizeof(buf), "dev.hwpstate_%s.%d.epp", arch,
+		    ids[i]);
 		if (sysctlbyname(buf, NULL, NULL, &val, sizeof(val)) < 0) {
 			errfail = errno;
-			if (errfail == ENOENT) {
-				warnx("unexpected end of CPU list at %s", buf);
-				return (-1);
-			}
 			warnc(errfail, "%s", buf);
-			/*
-			 * Something went wrong here, roll back
-			 * previous changes.
-			 */
 
+			/* Roll back the CPUs already changed. */
 			for (j = 0; j < i; j++) {
 				snprintf(buf, sizeof(buf),
-				    "dev.hwpstate_%s.%d.epp", arch, j);
-				if (sysctlbyname(buf, NULL, NULL, &v[j],
-				    sizeof(v[j])) < 0)
+				    "dev.hwpstate_%s.%d.epp", arch, ids[j]);
+				if (sysctlbyname(buf, NULL, NULL, &old[j],
+				    sizeof(old[j])) < 0)
 					warn("rollback of %s failed", buf);
 			}
-
 			return (-1);
 		}
 	}
 
-	for (i = 0; i < ncpu; i++)
-		printf("dev.hwpstate_%s.%d.epp: %d -> %d\n",
-		    arch, i, v[i], val);
+	for (i = 0; i < n; i++)
+		printf("dev.hwpstate_%s.%d.epp: %d -> %d\n", arch, ids[i],
+		    old[i], val);
 
 	return (0);
 }
 
 static void
-print_one_epp(const char *arch, int cpuid, int currepp)
-{
-	printf("dev.hwpstate_%s.%d.epp: %d\n", arch, cpuid, currepp);
-}
-
-static void
-print_epp(const char *arch, const int *v, int ncpu)
+print_epp(const char *arch, const int *ids, const int *v, int n)
 {
 	int i;
 
-	for (i = 0; i < ncpu; i++)
-		print_one_epp(arch, i, v[i]);
+	for (i = 0; i < n; i++)
+		printf("dev.hwpstate_%s.%d.epp: %d\n", arch, ids[i], v[i]);
 }
 
 static void
@@ -167,8 +109,8 @@ usage(void)
 int
 main(int argc, char *argv[])
 {
-	int c, archerr = 0, i, maxid, ncpu, retcode = 0, val = 0;
-	int cflag = 0, cpu = 0, *cpus = NULL, prevepp = 0;
+	int c, archerr = 0, i, j, maxid, n, retcode = 0, val = 0;
+	int cflag = 0, cpu = 0, *cpus = NULL;
 	char *value = NULL;
 	char buf[2][64];
 	size_t len = sizeof(maxid), size;
@@ -207,6 +149,12 @@ main(int argc, char *argv[])
 	if (argc > 0)
 		usage();
 
+	if (value != NULL) {
+		val = strtonum(value, 0, maxval, &errstr);
+		if (errstr != NULL)
+			errx(1, "value %s %s (0-%d)", value, errstr, maxval);
+	}
+
 	for (i = 0; i < (int)nitems(arch); i++) {
 		size = 0;
 
@@ -227,59 +175,54 @@ main(int argc, char *argv[])
 	if (archerr == (int)nitems(arch))
 		errx(1, "there's no attached hwpstate drivers");
 
-	if (value != NULL) {
-		val = strtonum(value, 0, maxval, &errstr);
-		if (errstr != NULL)
-			errx(1, "value %s %s (0-%d)", value, errstr, maxval);
-	}
-
 	if (sysctlbyname("kern.smp.maxid", &maxid, &len, NULL, 0) < 0)
 		err(1, "sysctlbyname(kern.smp.maxid)");
 
-	for (i = 0; i < cflag; i++)
+	for (i = 0; i < cflag; i++) {
 		if (cpus[i] > maxid)
 			errx(1, "cpu %d: no such CPU (max is %d)", cpus[i], maxid);
-
-	if (cflag > 0) {
-		for (i = 0; i < cflag; i++) {
-			if ((prevepp = get_one_epp(detected_arch, cpus[i])) == -2) {
-				warnx("cpuid %d: no hwpstate node", cpus[i]);
-				retcode = 1;
-				break;
-			} else if (prevepp < 0) {
-				retcode = 1;
-				break;
-			}
-			if (value != NULL) {
-				if (set_one_epp(detected_arch, cpus[i], prevepp, val) < 0) {
-					retcode = 1;
-					break;
-				}
-			} else {
-				print_one_epp(detected_arch, cpus[i], prevepp);
-			}
-		}
-
-		free(cpus);
-		return (retcode);
+		for (j = 0; j < i; j++)
+			if (cpus[j] == cpus[i])
+				errx(1, "cpu %d given more than once", cpus[i]);
 	}
 
-	v = calloc(maxid + 1, sizeof(*v));
+	if (cflag == 0) {
+		cpus = calloc(maxid + 1, sizeof(*cpus));
+		if (cpus == NULL)
+			err(1, "calloc");
+		for (i = 0; i <= maxid; i++)
+			cpus[i] = i;
+		n = maxid + 1;
+	} else
+		n = cflag;
+
+	v = calloc(n, sizeof(*v));
 	if (v == NULL)
 		err(1, "calloc");
 
-	if ((ncpu = get_epp(detected_arch, v, maxid)) < 0) {
-		retcode = 1;
-	} else if (ncpu == 0) {
-		warnx("hwpstate_%s(4) not attached", detected_arch);
+	for (i = 0; i < n; i++) {
+		if ((v[i] = get_one_epp(detected_arch, cpus[i])) == -2) {
+			if (cflag == 0)
+				break;
+			errx(1, "cpu %d: no EPP control", cpus[i]);
+		} else if (v[i] < 0)
+			exit(1);
+	}
+	n = i;
+
+	if (n == 0) {
+		warnx("hwpstate_%s(4) provides no EPP control%s", detected_arch,
+		    strcmp(detected_arch, "amd") == 0 ?
+		    " (is machdep.hwpstate_amd_cppc_enable set?)" : "");
 		retcode = 1;
 	} else if (value == NULL) {
-		print_epp(detected_arch, v, ncpu);
-	} else if (set_epp(detected_arch, v, ncpu, val) < 0) {
+		print_epp(detected_arch, cpus, v, n);
+	} else if (set_epp(detected_arch, cpus, v, n, val) < 0) {
 		retcode = 1;
 	}
 
 	free(v);
+	free(cpus);
 
 	return (retcode);
 }
