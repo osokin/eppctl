@@ -23,7 +23,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.Dd September 28, 2026
+.Dd September 30, 2026
 .Dt EPPCTL 8
 .Os
 .Sh NAME
@@ -37,35 +37,30 @@
 .Sh DESCRIPTION
 The
 .Nm
-utility is used to set and display CPU Energy/Performance properties.
+utility displays and sets the CPU Energy/Performance Preference.
+It uses the sysctl variables provided by
+.Xr hwpstate_intel 4
+on Intel CPUs with HWP and by
+.Xr hwpstate_amd 4
+on AMD CPUs with CPPC.
 Without options,
 .Nm
-prints the current value for every CPU if
-.Fl c
-is not specified.
-If
-.Fl c
-is specified, the
-.Nm
-will work with that CPU only.
-With
-.Fl s ,
-and if
-.Fl c
-is not specified it sets every CPU and prints the old and new values.
-If any CPU cannot be updated, the CPUs already changed
-are restored to their previous values.
+prints the current value for every CPU.
 .Pp
 The options are as follows:
 .Bl -tag -width ".Fl s Ar value"
 .It Fl c Ar cpuid
-Use specific CPU to get or set value.
+Work on the CPU numbered
+.Ar cpuid
+only, instead of on all CPUs.
+CPUs are numbered from 0.
+This option can be given more than once to select several CPUs.
 .It Fl h
 Print a help message.
 .It Fl s Ar value
-Set the Energy/Performance Preference of every CPU to
+Set the Energy/Performance Preference of the selected CPUs to
 .Ar value ,
-from 0 to 255:
+and print the old and new values:
 .Pp
 .Bl -tag -width "255" -compact
 .It Li 0
@@ -74,26 +69,38 @@ most performant
 most energy efficient
 .El
 .Pp
+If any CPU cannot be updated, the CPUs already changed
+are restored to their previous values.
 Root privileges are required.
 .El
-.Sh VALUES
+.Pp
 On
 .Fx 16.0
 and later,
 .Ar value
 is the raw hardware setting, from 0 to 255.
-Earlier releases use a percentage, from 0 to 100.
+Earlier releases use a percentage and accept only 0 to 100.
+If the kernel rejects a value,
+.Nm
+reports the error and changes nothing.
 .Sh EXIT STATUS
 .Ex -std
 .Sh EXAMPLES
-Set the CPUs to the most performant state:
-.Bd -literal -offset indent
-# eppctl -s 0
-.Ed
-Print the state for the second CPU:
-.Bd -literal -offset indent
-$ eppctl -c 2
-.Ed
+Print the value for every CPU:
+.Pp
+.Dl $ eppctl
+.Pp
+Print the value for CPU 2 only:
+.Pp
+.Dl $ eppctl -c 2
+.Pp
+Set every CPU to the most performant state:
+.Pp
+.Dl # eppctl -s 0
+.Pp
+Set CPUs 0 and 1 to a balanced value:
+.Pp
+.Dl # eppctl -c 0 -c 1 -s 128
 .Sh SEE ALSO
 .Xr hwpstate_amd 4 ,
 .Xr hwpstate_intel 4 ,
