@@ -38,6 +38,12 @@
 #include <string.h>
 #include <unistd.h>
 
+/*
+ * The largest value accepted by any kernel.  FreeBSD 16.0 and later take the
+ * raw hardware value, 0-255; earlier releases take a percentage, 0-100, and
+ * reject anything larger with EINVAL.  __FreeBSD_version did not change when
+ * the scale did, so let the kernel decide rather than guess at build time.
+ */
 #define	EPP_MAX		255
 
 static int
