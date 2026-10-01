@@ -116,3 +116,14 @@ The
 .Nm
 utility was implemented by
 .An Sergey A. Osokin Aq Mt osa@FreeBSD.org
+.Sh CAVEATS
+By default,
+.Xr hwpstate_intel 4
+uses package-level control, where all CPUs of a package share one setting.
+(It is turned off on hybrid CPUs and by the
+.Va machdep.hwpstate_pkg_ctrl
+loader tunable.)
+Setting a value with
+.Fl c
+then changes it for the whole package, and the value shown for the other CPUs
+of that package can keep its old setting.
