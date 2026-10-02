@@ -11,7 +11,7 @@ correspondingly, and applies one value to every CPU at once.
 
 - FreeBSD with `hwpstate_amd(4)` or `hwpstate_intel(4)` attached
   (AMD CPU with CPPC enabled or Intel CPU with HWP)
-- root privileges to change the setting
+- Root privileges to change the setting
 
 ## Build and install
 
@@ -23,7 +23,7 @@ make install
 ## Usage
 
 ```
-eppctl [-h] [-s value]
+eppctl [-c cpuid] [-h] [-s value]
 ```
 
 Without options, `eppctl` prints the current EPP of every CPU:
@@ -34,7 +34,16 @@ dev.hwpstate_intel.0.epp: 100
 dev.hwpstate_intel.1.epp: 100
 ```
 
-`-s value` sets every CPU to `value` and prints the old and new values:
+`-c cpuid` limits reading or setting to that CPU (CPUs are numbered
+from 0).  Repeat it to select several CPUs:
+
+```
+$ eppctl -c 3
+dev.hwpstate_intel.3.epp: 100
+```
+
+`-s value` sets the selected CPUs (every CPU unless `-c` is given) to
+`value` and prints the old and new values:
 
 ```
 # eppctl -s 0
@@ -44,10 +53,16 @@ dev.hwpstate_intel.1.epp: 100 -> 0
 
 `value` ranges from 0 (most performant) to 255 (most energy efficient).
 On FreeBSD 14 and 15 the kernel uses a percentage instead, and accepts
-only 0 to 100.
+only 0 to 100; `eppctl` reports the kernel's error and changes nothing
+if a value is out of range.
 
 If any CPU cannot be updated, `eppctl` restores the CPUs it has already
 changed to their previous values and exits with status 1.
+
+## Caveats
+
+On Intel CPUs with package-level control (the default, except on hybrid
+CPUs), the setting is shared by all CPUs of a package; see `eppctl(8)`.
 
 ## See also
 
