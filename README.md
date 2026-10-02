@@ -59,6 +59,11 @@ if a value is out of range.
 If any CPU cannot be updated, `eppctl` restores the CPUs it has already
 changed to their previous values and exits with status 1.
 
+## Caveats
+
+On Intel CPUs with package-level control (the default, except on hybrid
+CPUs), the setting is shared by all CPUs of a package; see `eppctl(8)`.
+
 ## See also
 
 `eppctl(8)`, `hwpstate_amd(4)`, `hwpstate_intel(4)`, `sysctl(8)`
