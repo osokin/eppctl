@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# GitHub Actions CI: build eppctl on FreeBSD.
+# Uses vmactions/freebsd-vm to run an ephemeral FreeBSD VM on a
+# linux/amd64 GitHub-hosted runner via QEMU.
+
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build:
+    name: Build on FreeBSD ${{ matrix.freebsd }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        freebsd:
+          - "14.5"
+          - "15.1"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Build inside FreeBSD ${{ matrix.freebsd }} VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.freebsd }}
+          usesh: true
+          # Files checked out on the Linux host are shared into the VM
+          # under /home/runner/work via NFS, so we can build in-place.
+          run: |
+            set -e
+
+            echo "=== Toolchain ==="
+            cc --version
+            make --version
+
+            echo "=== Build (WARNS=6) ==="
+            make
+
+            echo "=== Verify binary ==="
+            file eppctl
+            ls -lh eppctl
+
+            echo "=== Build clean ==="
+            make clean

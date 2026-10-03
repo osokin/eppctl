@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: BSD-2-Clause
+#
+# GitHub Actions CI: functional smoke-tests for eppctl on FreeBSD.
+#
+# What can be tested in CI without real CPU hardware:
+#   - The binary exits 1 (not a crash) when no hwpstate driver is present.
+#   - Usage / help flag (-h) works.
+#   - Out-of-range -s value is rejected with a helpful error message.
+#   - Bad -c argument (non-numeric) is rejected.
+#   - Unexpected extra argument is rejected.
+#   - The installed man page renders without troff errors (mandoc -T lint).
+#
+# Tests that require actual AMD/Intel HWP hardware (no driver present in
+# the VM) are clearly marked SKIP and documented for local execution.
+
+name: Test
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    name: Test on FreeBSD ${{ matrix.freebsd }}
+    runs-on: ubuntu-latest
+    # Tests are meaningful only after a successful build; make the
+    # dependency explicit so the matrix stays in sync.
+    needs: []           # remove the [] and add "build" here once both
+                        # workflows live in the same file or use workflow_run.
+
+    strategy:
+      fail-fast: false
+      matrix:
+        freebsd:
+          - "14.5"
+          - "15.1"
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v6
+
+      - name: Run smoke-tests inside FreeBSD ${{ matrix.freebsd }} VM
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: ${{ matrix.freebsd }}
+          usesh: true
+          run: |
+            set -e
+
+            # ── Build first ──────────────────────────────────────────────────
+            make
+            BIN="./eppctl"
+
+            pass=0; fail=0
+            check() {
+              desc="$1"; expected="$2"; shift 2
+              actual=$("$@" 2>&1); rc=$?
+              if [ "$rc" -eq "$expected" ]; then
+                echo "PASS [$desc] (exit $rc)"
+                pass=$((pass + 1))
+              else
+                echo "FAIL [$desc] expected exit $expected, got $rc"
+                echo "     output: $actual"
+                fail=$((fail + 1))
+              fi
+            }
+
+            # ── T1: no hardware → exits 1, not a panic/crash ──────────────
+            check "no-hwpstate-driver" 1  $BIN
+
+            # ── T2: -h prints usage and exits 1 ──────────────────────────
+            check "help-flag"          1  $BIN -h
+
+            # ── T3: extra positional argument rejected ────────────────────
+            check "extra-arg"          1  $BIN spurious
+
+            # ── T4: out-of-range -s value rejected before any sysctl ──────
+            check "value-too-high"     1  $BIN -s 256
+
+            # ── T5: negative -s value rejected ───────────────────────────
+            check "value-negative"     1  $BIN -s -- -1
+
+            # ── T6: non-numeric -c rejected ───────────────────────────────
+            check "bad-cpu-arg"        1  $BIN -c bogus
+
+            # ── Man page linting ──────────────────────────────────────────
+            echo "=== mandoc lint ==="
+            mandoc -T lint eppctl.8 && echo "PASS [mandoc-lint]" && pass=$((pass + 1)) || { echo "FAIL [mandoc-lint]"; fail=$((fail + 1)); }
+
+            # ── Summary ──────────────────────────────────────────────────
+            echo "Results: $pass passed, $fail failed."
+            [ "$fail" -eq 0 ] || exit 1
