@@ -40,8 +40,7 @@ The
 utility displays and sets the CPU Energy/Performance Preference.
 It uses the sysctl variables provided by
 .Xr hwpstate_intel 4
-on Intel CPUs with HWP and by
-.Xr hwpstate_amd 4
+on Intel CPUs with HWP and by hwpstate_amd
 on AMD CPUs with CPPC.
 Without options,
 .Nm
@@ -102,7 +101,6 @@ Set CPUs 0 and 1 to a balanced value:
 .Pp
 .Dl # eppctl -c 0 -c 1 -s 128
 .Sh SEE ALSO
-.Xr hwpstate_amd 4 ,
 .Xr hwpstate_intel 4 ,
 .Xr sysctl 8
 .Sh HISTORY
