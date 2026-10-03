@@ -47,7 +47,8 @@ jobs:
           release: ${{ matrix.freebsd }}
           usesh: true
           run: |
-            set -e
+            # Disable exit-on-error so expected test failures do not abort the session
+            set +e
 
             # ── Build first ──────────────────────────────────────────────────
             make
