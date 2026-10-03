@@ -1,5 +1,8 @@
 # eppctl
 
+[![Build Status](https://github.com/osokin/eppctl/workflows/Build/badge.svg)](https://github.com/osokin/eppctl/actions)
+[![Build Status](https://github.com/osokin/eppctl/workflows/Test/badge.svg)](https://github.com/osokin/eppctl/actions)
+
 `eppctl` displays and sets the Energy/Performance Preference (EPP) of
 AMD CPUs with Collaborative Processor Performance Control (CPPC) or
 Intel CPUs with Hardware-Controlled Performance States (HWP) on FreeBSD.
